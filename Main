@@ -1,0 +1,63 @@
+MainActivity.kt
+**
+package com.example.vlc
+
+import android.net.Uri
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
+
+class MainActivity : AppCompatActivity() {
+
+    val args: ArrayList<String> = ArrayList() //VLC参数
+    var mLibVLC : LibVLC? = null
+    var mMediaPlayer : MediaPlayer? = null
+    var mVideoLayout: VLCVideoLayout? = null
+    val ENABLE_SUBTITLES: Boolean = false
+    val USE_TEXTURE_VIEW: Boolean = false
+    var uri: Uri? = null
+    var media: Media? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        args.add("--rtsp-tcp");//强制rtsp-tcp，加快加载视频速度
+        args.add("--live-caching=0");
+        args.add("--file-caching=0");
+        args.add("--network-caching=0");//增加实时性，延时大概2-3秒
+        mLibVLC = LibVLC(this, args);
+        mMediaPlayer =  MediaPlayer(mLibVLC);
+        mVideoLayout = findViewById(R.id.view_vlc_layout);
+
+        mMediaPlayer!!.attachViews(mVideoLayout!!, null, ENABLE_SUBTITLES, USE_TEXTURE_VIEW)
+        mMediaPlayer?.setVideoScale(MediaPlayer.ScaleType.SURFACE_BEST_FIT);
+        uri = Uri.parse("rtsp://184.72.239.149/vod/mp4://BigBuckBunny_175k.mov")
+
+        media = Media(mLibVLC, uri)
+        mMediaPlayer?.media = media
+        media?.release()
+        mMediaPlayer?.play()
+    }
+
+}
+===================================================================================================
+activity_main.xml
+**
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <org.videolan.libvlc.util.VLCVideoLayout
+        android:id="@+id/view_vlc_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</FrameLayout>
+===================================================================================================
