@@ -1,3 +1,7 @@
+https://gitee.com/newpoyang/vlc-player/tree/master                                                                          //參考範例
+https://gitee.com/newpoyang/vlc-player/blob/master/app/src/main/java/com/android/vlcplayer/FrameActivity.java               //參考範例
+
+
 package com.example.vlc
 
 import android.content.res.Configuration
