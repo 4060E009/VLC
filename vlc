@@ -1,0 +1,136 @@
+MainActivity.kt
+**
+package com.example.vlc
+
+import android.content.res.Configuration
+import android.net.Uri
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.util.DisplayMetrics
+import android.util.Log
+import android.view.ViewGroup
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
+
+class MainActivity : AppCompatActivity() {
+
+    val args: ArrayList<String> = ArrayList() //VLC参数
+    var mLibVLC : LibVLC? = null
+    var mMediaPlayer : MediaPlayer? = null
+    var mVideoLayout: VLCVideoLayout? = null
+    val ENABLE_SUBTITLES: Boolean = false
+    val USE_TEXTURE_VIEW: Boolean = false
+    var uri: Uri? = null
+    var media: Media? = null
+    var displayMetrics: DisplayMetrics? = null
+    var mHeight: Int = 0
+    var mWidth: Int = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        mHeight = displayMetrics!!.heightPixels
+        mWidth = displayMetrics!!.widthPixels
+
+        Log.d("orientation", "onCreate: ")
+
+        args.add("--rtsp-tcp")//强制rtsp-tcp，加快加载视频速度
+        args.add("--live-caching=0")
+        args.add("--file-caching=0")
+        args.add("--network-caching=0")//增加实时性，延时大概2-3秒
+        args.add("--aout=opensles")
+        mLibVLC = LibVLC(this, args)
+        mMediaPlayer =  MediaPlayer(mLibVLC)
+        mVideoLayout = findViewById(R.id.view_vlc_layout)
+
+        mMediaPlayer!!.attachViews(mVideoLayout!!, null, ENABLE_SUBTITLES, USE_TEXTURE_VIEW)
+        mMediaPlayer?.videoScale = MediaPlayer.ScaleType.SURFACE_BEST_FIT
+        uri = Uri.parse("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_175k.mov")
+
+
+        media = Media(mLibVLC, uri)
+        mMediaPlayer?.media = media
+        mMediaPlayer!!.vlcVout.setWindowSize(mWidth, mHeight)
+        media?.release()
+        mMediaPlayer?.play()
+
+        when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                Log.d("orientation","ORIENTATION_LANDSCAPE")
+            }
+            Configuration.ORIENTATION_PORTRAIT -> {
+                Log.d("orientation","ORIENTATION_PORTRAIT")
+            }
+            Configuration.ORIENTATION_UNDEFINED -> {
+                Log.d("orientation","ORIENTATION_UNDEFINED")
+            }
+            else -> "Error"
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+
+        when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                Log.d("orientation","onConfigurationChanged: 橫向")
+                displayMetrics = DisplayMetrics()
+                windowManager.defaultDisplay.getMetrics(displayMetrics)
+                mHeight = displayMetrics!!.heightPixels
+                mWidth = displayMetrics!!.widthPixels
+                mMediaPlayer!!.vlcVout.setWindowSize(mWidth, mHeight)
+            }
+            Configuration.ORIENTATION_PORTRAIT -> {
+                Log.d("orientation","OonConfigurationChanged: 垂直")
+            }
+            Configuration.ORIENTATION_UNDEFINED -> {
+                Log.d("orientation","OonConfigurationChanged: RIENTATION_UNDEFINED")
+            }
+            else -> "Error"
+        }
+    }
+}
+====================================================================================================================
+AndroidManifest.xml
+**
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.vlc">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"
+        tools:ignore="ProtectedPermissions" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.VLC">
+        <activity android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+====================================================================================================================
+logcat
+**
+2021-07-20 22:42:49.027 18992-18992/com.example.vlc D/orientation: onCreate: 
+2021-07-20 22:42:49.115 18992-18992/com.example.vlc D/orientation: ORIENTATION_LANDSCAPE
+2021-07-20 22:43:07.882 18992-18992/com.example.vlc D/orientation: OonConfigurationChanged: 垂直
+2021-07-20 22:43:31.270 18992-18992/com.example.vlc D/orientation: onConfigurationChanged: 橫向
+2021-07-20 22:43:36.840 18992-18992/com.example.vlc D/orientation: OonConfigurationChanged: 垂直
