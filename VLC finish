@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
 
     var isSetup: Boolean = false
 
-    val args: ArrayList<String> = ArrayList() //VLC参数
+    val args: ArrayList<String> = ArrayList()                                                       //VLC参数
     var mLibVLC: LibVLC? = null
     var mMediaPlayer: MediaPlayer? = null
     var mVideoLayout: VLCVideoLayout? = null
@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//      this.getSupportActionBar()?.hide()          //隱藏title
+//      this.getSupportActionBar()?.hide()                                                        //隱藏title
         setContentView(R.layout.activity_main)
 
         displayMetrics = DisplayMetrics()
