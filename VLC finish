@@ -1,0 +1,261 @@
+MainActivity.kt
+**
+package com.example.vlc
+
+import android.content.res.Configuration
+import android.net.Uri
+import android.os.Bundle
+import android.util.DisplayMetrics
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
+
+class MainActivity : AppCompatActivity() {
+
+    var isSetup: Boolean = false
+
+    val args: ArrayList<String> = ArrayList() //VLC参数
+    var mLibVLC: LibVLC? = null
+    var mMediaPlayer: MediaPlayer? = null
+    var mVideoLayout: VLCVideoLayout? = null
+    val ENABLE_SUBTITLES: Boolean = false
+    val USE_TEXTURE_VIEW: Boolean = false
+    var uri: Uri? = null
+    var media: Media? = null
+    var displayMetrics: DisplayMetrics? = null
+    var mHeight: Int = 0
+    var mWidth: Int = 0
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        mHeight = displayMetrics!!.heightPixels
+        mWidth = displayMetrics!!.widthPixels
+
+        Log.d("layout", "mMediaPlayer:" + mHeight)
+        Log.d("layout", "mMediaPlayer:" + mWidth)
+
+        Log.d("orientation", "onCreate: ")
+
+        if (!isSetup) {
+            isSetup = true
+
+            args.add("--rtsp-tcp")//强制rtsp-tcp，加快加载视频速度
+            args.add("--live-caching=0")
+            args.add("--file-caching=0")
+            args.add("--network-caching=0")//增加实时性，延时大概2-3秒
+            args.add("--aout=opensles")
+            mLibVLC = LibVLC(this, args)
+            mMediaPlayer = MediaPlayer(mLibVLC)
+            mVideoLayout = findViewById(R.id.view_vlc_layout)
+
+            mMediaPlayer!!.attachViews(mVideoLayout!!, null, ENABLE_SUBTITLES, USE_TEXTURE_VIEW)
+            uri = Uri.parse("rtsp://192.168.5.201:554/stream1")
+
+
+            // rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_175k.mov                 //測試影片
+            // rtsp://192.168.5.201:554/stream1                                                 //公司監視器畫面
+            media = Media(mLibVLC, uri)
+            when (resources.configuration.orientation) {
+                Configuration.ORIENTATION_LANDSCAPE -> {
+                    mMediaPlayer?.videoScale = MediaPlayer.ScaleType.SURFACE_FILL
+                }
+                Configuration.ORIENTATION_PORTRAIT -> {
+                    mMediaPlayer?.videoScale = MediaPlayer.ScaleType.SURFACE_BEST_FIT
+                }
+            }
+            mMediaPlayer?.media = media
+            mMediaPlayer?.vlcVout?.setWindowSize(mWidth, mHeight)
+            mMediaPlayer?.aspectRatio = mWidth.toString() + ":" + mHeight.toString()
+            mMediaPlayer?.scale = 0f
+            media?.release()
+            mMediaPlayer?.play()
+
+        }
+
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                mMediaPlayer?.videoScale = MediaPlayer.ScaleType.SURFACE_FILL
+            }
+            Configuration.ORIENTATION_PORTRAIT -> {
+                mMediaPlayer?.videoScale = MediaPlayer.ScaleType.SURFACE_BEST_FIT
+            }
+        }
+        mMediaPlayer?.updateVideoSurfaces()
+
+    }
+}
+=================================================================================================
+actavity_main.xml
+**
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <RelativeLayout
+        android:id="@+id/relative_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <org.videolan.libvlc.util.VLCVideoLayout
+            android:id="@+id/view_vlc_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </RelativeLayout>
+
+
+
+</RelativeLayout>
+=================================================================================================
+AndroidManifest.xml
+**
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.vlc">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"
+        tools:ignore="ProtectedPermissions" />
+
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.VLC">
+        <activity android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+=================================================================================================
+gradle(Project:VLC)
+**
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    ext.kotlin_version = "1.5.21"
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:4.2.2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        jcenter() // Warning: this repository is going to shut down soon
+//        maven { url "https://dl.bintray.com/videolan/Android" }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+=================================================================================================
+gradle(Module:app)
+**
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-android-extensions'
+}
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
+
+
+
+//    repositories{
+//        flatDir{
+//            dirs 'libs'
+//        }
+//    }
+
+    defaultConfig {
+        applicationId "com.example.vlc"
+        minSdkVersion 23
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+//        ndk {
+//            //选择要添加的对应cpu类型的.so库。
+//            abiFilters 'armeabi-v7a','x86'
+//        }
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.3.0'
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+    // vlc
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'org.videolan.android:libvlc-all:3.1.12'
+//    implementation(name: 'libvlc-all-3.2.6', ext: 'aar')
+
+}
