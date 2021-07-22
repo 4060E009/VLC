@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//      this.getSupportActionBar()?.hide()          //隱藏title
         setContentView(R.layout.activity_main)
 
         displayMetrics = DisplayMetrics()
